@@ -1,0 +1,31 @@
+html {
+  background: #07090d;
+  scroll-behavior: smooth;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+::selection {
+  color: white;
+  background: #4556cf;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: #090c11;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #29303b;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #353e4b;
+}
