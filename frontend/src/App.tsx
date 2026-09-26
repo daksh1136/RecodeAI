@@ -58,8 +58,8 @@ interface Modernization {
   score_improvement: number;
   findings_resolved: number;
 }
-
-const API = "http://127.0.0.1:8000";
+const API =
+  import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000";
 
 const samples: Record<string, string> = {
   python: `import os
@@ -317,6 +317,7 @@ function App() {
 
               <select
                 className="language-select"
+                aria-label="Source language"
                 value={language}
                 onChange={(event) => changeLanguage(event.target.value)}
               >
