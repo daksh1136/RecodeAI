@@ -10,7 +10,10 @@ import {
   ShieldCheck,
   Sparkles,
   Wrench,
+  Terminal,
+  Zap,
 } from "lucide-react";
+import heroVisual from "./assets/hero.png";
 
 import "./App.css";
 
@@ -243,6 +246,7 @@ function App() {
 
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content">Skip to code analysis</a>
       <header className="topbar">
         <div className="topbar-inner">
           <div className="brand">
@@ -256,18 +260,21 @@ function App() {
             </div>
           </div>
 
-          <div className="topbar-status">
+          <div className="topbar-actions">
+            <span className="engine-pill"><Terminal size={12} /> API :8000</span>
+            <div className="topbar-status">
             <span className="status-dot" />
             Deterministic analysis engine
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="container">
+      <main className="container" id="main-content">
         <section className="hero">
           <div className="eyebrow">
             <Sparkles size={13} />
-            LEGACY CODE INTELLIGENCE
+            RECODEAI // LEGACY CODE INTELLIGENCE
           </div>
 
           <h1>
@@ -281,10 +288,20 @@ function App() {
             creates a prioritized remediation plan and measures whether
             conservative transformations actually improve the code.
           </p>
+          <div className="hero-pills">
+            <span><ShieldCheck size={13} /> Explainable findings</span>
+            <span><Zap size={13} /> Measurable impact</span>
+            <span><Code2 size={13} /> Python · JS · Java</span>
+          </div>
+          <div className="hero-visual" aria-hidden="true">
+            <span className="hero-visual-label">TRACE / REVIEW / REPAIR</span>
+            <img src={heroVisual} alt="" />
+            <span className="hero-visual-note">A safer path through legacy systems.</span>
+          </div>
         </section>
 
         <section className="workspace-grid">
-          <div className="panel editor-panel">
+          <div className={`panel editor-panel ${loading ? "is-scanning" : ""}`}>
             <div className="panel-header">
               <div>
                 <div className="panel-title">
@@ -311,6 +328,7 @@ function App() {
 
             <textarea
               className="code-editor"
+              aria-label="Source code to analyze"
               value={code}
               spellCheck={false}
               onChange={(event) => {
@@ -373,7 +391,7 @@ function App() {
             ) : (
               <>
                 <div className="overall-score">
-                  <div className="score-ring">
+                  <div className="score-ring" style={{ "--score": `${analysis.scores.overall * 3.6}deg` } as React.CSSProperties}>
                     <strong>{analysis.scores.overall}</strong>
                     <span>/100</span>
                   </div>

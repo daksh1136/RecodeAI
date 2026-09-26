@@ -1,0 +1,343 @@
+
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RecodeAI — Senior Engineering Code Review</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #1f2328;
+    background: #fff;
+    padding: 40px 20px 60px;
+  }
+  .page { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { color: #57606a; font-size: 13px; margin-bottom: 32px; }
+  h2 { font-size: 13px; font-weight: 700; text-transform: uppercase;
+       letter-spacing: .06em; color: #57606a; margin: 32px 0 12px; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 13px; }
+  th { text-align: left; padding: 7px 10px; background: #f7f8fa; font-weight: 600;
+       font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #57606a;
+       border: 1px solid #e5e7eb; }
+  td { padding: 9px 10px; border: 1px solid #e5e7eb; vertical-align: top; }
+  tr:nth-child(even) td { background: #fafafa; }
+  .sev { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; letter-spacing: .04em; white-space: nowrap; }
+  .sev-critical { background: #fde8e8; color: #b91c1c; }
+  .sev-high     { background: #fef3cd; color: #92400e; }
+  .sev-medium   { background: #e0f2fe; color: #0369a1; }
+  .sev-low      { background: #f0fdf4; color: #166534; }
+  code { font-family: "Cascadia Code", "Fira Mono", Consolas, monospace; font-size: 12px;
+         background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 3px; padding: 1px 5px; }
+  .file { font-family: "Cascadia Code", "Fira Mono", Consolas, monospace; font-size: 11px;
+          color: #3b82d4; white-space: nowrap; }
+  .summary-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 28px; }
+  .stat { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 14px 16px; text-align: center; }
+  .stat-n { font-size: 28px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+  .stat-l { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #57606a; }
+  .n-critical { color: #b91c1c; }
+  .n-high     { color: #92400e; }
+  .n-medium   { color: #0369a1; }
+  .n-low      { color: #166534; }
+  .note { background: #f7f8fa; border-left: 3px solid #3b82d4; padding: 10px 14px; border-radius: 0 4px 4px 0; margin: 16px 0 8px; font-size: 13px; color: #1f2328; }
+  footer { margin-top: 48px; padding-top: 14px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 12px; color: #57606a; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>RecodeAI — Senior Engineering Review</h1>
+  <p class="subtitle">Reviewer: senior software modernization engineer  ·  Files reviewed: backend/app/* · backend/tests/test_api.py · frontend/src/App.tsx</p>
+
+  <div class="summary-grid">
+    <div class="stat"><div class="stat-n n-critical">2</div><div class="stat-l">Critical</div></div>
+    <div class="stat"><div class="stat-n n-high">6</div><div class="stat-l">High</div></div>
+    <div class="stat"><div class="stat-n n-medium">6</div><div class="stat-l">Medium</div></div>
+    <div class="stat"><div class="stat-n n-low">6</div><div class="stat-l">Low</div></div>
+  </div>
+
+  
+  <h2>1 · Transformation Safety — Potential Behavior Changes</h2>
+  <div class="note">These are the highest-risk findings. A tool that promises conservative modernization must never silently alter program semantics.</div>
+
+  <table>
+    <thead><tr><th>Ref</th><th>File</th><th>Issue</th><th>Severity</th><th>Recommended Change</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>T-01</td>
+        <td><span class="file">modernizer.py L11</span></td>
+        <td><code>var → let</code> replacement is unconditional — it replaces <em>every</em> <code>var</code> token, including those inside strings, comments, and identifiers like <code>variable</code> or <code>varname</code>.</td>
+        <td><span class="sev sev-critical">critical</span></td>
+        <td>Apply the substitution only outside string/comment contexts using a word-boundary-aware approach. At minimum, change the regex from <code>\bvar\s+</code> (which already uses <code>\b</code>) but also skip lines that are comments (<code>^\s*//</code>) and ensure the replacement is <code>const</code> by default when the variable is never reassigned, otherwise <code>let</code>.</td>
+        <td>Replacing <code>var</code> with <code>let</code> changes temporal dead-zone behaviour and hoisting. Code that intentionally relied on <code>var</code>-hoisting will break silently. The current change message says "safe" but the transformation can change runtime behaviour.</td>
+      </tr>
+      <tr>
+        <td>T-02</td>
+        <td><span class="file">modernizer.py L20-28</span></td>
+        <td><code>Vector&lt;T&gt; → ArrayList&lt;T&gt;</code> replaces only the declaration type; <em>instantiation sites</em> (<code>new Vector&lt;&gt;()</code>) are not updated, leaving a compilation mismatch.</td>
+        <td><span class="sev sev-critical">critical</span></td>
+        <td>Extend both Java regexes to also rewrite <code>new Vector&lt;&gt;()</code> → <code>new ArrayList&lt;&gt;()</code> and <code>new Hashtable&lt;&gt;()</code> → <code>new HashMap&lt;&gt;()</code>. The existing test <code>test_java_safe_modernization</code> only checks the declaration, so the instantiation gap is untested.</td>
+        <td>Code that only has the declaration rewritten will not compile. The tool would produce invalid Java output, which violates the "measurable improvement" guarantee.</td>
+      </tr>
+      <tr>
+        <td>T-03</td>
+        <td><span class="file">modernizer.py L10</span></td>
+        <td>The <code>language</code> guard inside <code>modernize()</code> includes <code>"js"</code> as an alias, but <code>normalize_language()</code> already expands <code>"js"</code> to <code>"javascript"</code> before the function is called from the API layer. The guard can never be reached for the <code>"js"</code> branch.</td>
+        <td><span class="sev sev-medium">medium</span></td>
+        <td>Remove the <code>"js"</code>, <code>"py"</code>, <code>"python3"</code> aliases from <code>modernizer.py</code>. Accept only canonical names. Call <code>normalize_language()</code> at the top of <code>modernize()</code> instead of maintaining a parallel alias list.</td>
+        <td>Alias divergence between <code>analyzer.py</code> and <code>modernizer.py</code> will silently break if a new alias is added to the analyzer but forgotten in the modernizer. Single source of truth is the safe pattern.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  
+  <h2>2 · Static Analysis — False Positives &amp; Rule Gaps</h2>
+
+  <table>
+    <thead><tr><th>Ref</th><th>File</th><th>Issue</th><th>Severity</th><th>Recommended Change</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>A-01</td>
+        <td><span class="file">analyzer.py L110-113</span></td>
+        <td>The JavaScript <code>var</code> rule (<code>\bvar\s+</code>) fires on comment lines (e.g. <code>// var x was used here</code>) and string literals, producing false-positive findings.</td>
+        <td><span class="sev sev-high">high</span></td>
+        <td>Pre-strip comment tokens before matching, or skip lines that begin with <code>//</code> or are inside a <code>/* */</code> block. Same applies to the loose-equality rules.</td>
+        <td>False positives erode trust in the tool and will cause users to dismiss real findings.</td>
+      </tr>
+      <tr>
+        <td>A-02</td>
+        <td><span class="file">analyzer.py L116-130</span></td>
+        <td>Loose-equality patterns <code>(?&lt;![=!])==(?!=)</code> and <code>(?&lt;![=!])!=(?!=)</code> match inside string literals and regex patterns. E.g., <code>const pattern = /a==b/</code> or <code>const s = "x == y"</code> will trigger findings.</td>
+        <td><span class="sev sev-high">high</span></td>
+        <td>Apply the regex only on the non-string, non-comment portion of each line. A minimal approach: skip lines where the match offset falls inside quoted regions.</td>
+        <td>Matching inside string literals is a well-known source of false positives in line-based static analysis.</td>
+      </tr>
+      <tr>
+        <td>A-03</td>
+        <td><span class="file">analyzer.py L298-307</span></td>
+        <td>The HTTP-endpoint detector (<code>["']http://[^"']+["']</code>) fires on legitimate internal-network addresses, test fixture strings, documentation comments, and localhost URLs used in tests. RecodeAI's own frontend hardcodes <code>http://127.0.0.1:8000</code>, which would trigger this rule if the file were analyzed.</td>
+        <td><span class="sev sev-medium">medium</span></td>
+        <td>Exclude loopback addresses (<code>127.0.0.1</code>, <code>localhost</code>) from the HTTP warning. Optionally downgrade severity to <code>low</code> for this class of finding or add a per-line suppression mechanism.</td>
+        <td>Producing a security finding for <code>http://localhost</code> is a false positive and will be ignored by developers, training them to ignore the output generally.</td>
+      </tr>
+      <tr>
+        <td>A-04</td>
+        <td><span class="file">analyzer.py L194-219</span></td>
+        <td><code>SECRET_PATTERN</code> will fire on variable names like <code>password_label</code>, <code>secret_message</code>, or documented examples. The regex matches any quoted string ≥ 6 chars following an assignment — including <code>password_hint = "Enter here"</code>.</td>
+        <td><span class="sev sev-medium">medium</span></td>
+        <td>Add a negative lookahead or entropy check. At minimum, require that the value not contain spaces (genuine secrets rarely do): change <code>[^"']{6,}</code> to <code>[^\s"']{6,}</code>.</td>
+        <td>High false-positive rate on this rule is the most likely reason developers will dismiss critical-severity findings entirely.</td>
+      </tr>
+      <tr>
+        <td>A-05</td>
+        <td><span class="file">analyzer.py L210-219</span></td>
+        <td><code>SQL_PATTERN</code> uses <code>.*</code> (greedy, single-line), so it can span across multiple unrelated columns if the code is minified or has long lines. The <code>re.DOTALL</code> flag is not set, but the line-by-line loop means the pattern is already safe — however the <code>.*</code> still makes the match too broad within a single line.</td>
+        <td><span class="sev sev-low">low</span></td>
+        <td>Constrain the wildcard: replace <code>.*</code> with <code>[^;#\n]{0,200}</code> to avoid matching across statement boundaries and to bound catastrophic backtracking on long lines.</td>
+        <td>Unbounded <code>.*</code> in regex applied to untrusted input is a ReDoS vector on pathological inputs and a source of imprecise matches.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  
+  <h2>3 · Backend Architecture &amp; Separation of Concerns</h2>
+
+  <table>
+    <thead><tr><th>Ref</th><th>File</th><th>Issue</th><th>Severity</th><th>Recommended Change</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>B-01</td>
+        <td><span class="file">main.py L41-56</span></td>
+        <td><code>SUPPORTED_LANGUAGES</code> and <code>validate_language()</code> live in the router. The authoritative set of supported languages already implicitly exists in <code>analyzer.py:RULES</code>. The two are out of sync — adding a new language to <code>RULES</code> requires a separate manual update to <code>main.py</code>.</td>
+        <td><span class="sev sev-high">high</span></td>
+        <td>Derive <code>SUPPORTED_LANGUAGES</code> from <code>RULES.keys()</code> in <code>analyzer.py</code> and export it. Import and use it in <code>main.py</code>. Delete the duplicate definition.</td>
+        <td>Single source of truth. The current code will silently allow analysis of a language that has no rules if someone adds to <code>RULES</code> without updating <code>main.py</code>, or reject a language that <em>does</em> have rules if someone forgets to update the router set.</td>
+      </tr>
+      <tr>
+        <td>B-02</td>
+        <td><span class="file">main.py L63,74,25</span></td>
+        <td>The API version string <code>"0.2.0"</code> is hard-coded in three separate places: <code>FastAPI(version=...)</code>, <code>root()</code>, and <code>health()</code>.</td>
+        <td><span class="sev sev-low">low</span></td>
+        <td>Define <code>VERSION = "0.2.0"</code> once at module level and reference it from all three locations.</td>
+        <td>Three places to update on every release; one will inevitably drift.</td>
+      </tr>
+      <tr>
+        <td>B-03</td>
+        <td><span class="file">main.py L99</span></td>
+        <td><code>lines_of_code=len(request.code.splitlines())</code> is computed inline in the route handler. This is business logic leaking into the transport layer.</td>
+        <td><span class="sev sev-low">low</span></td>
+        <td>Return <code>lines_of_code</code> from <code>analyze()</code> or compute it inside <code>analyzer.py</code> so it stays co-located with the other analysis results.</td>
+        <td>If the definition of "line count" ever changes (e.g., strip blank lines, count only non-empty lines), there is only one place to update.</td>
+      </tr>
+      <tr>
+        <td>B-04</td>
+        <td><span class="file">modernizer.py L5</span></td>
+        <td><code>modernize()</code> has no return type annotation. The caller in <code>main.py</code> destructures the return as a 3-tuple with no type safety.</td>
+        <td><span class="sev sev-low">low</span></td>
+        <td>Add <code>-&gt; tuple[str, list[str], str]</code> to the function signature.</td>
+        <td>Type annotations prevent misuse as the codebase grows and enable static analysis tools to catch issues early.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  
+  <h2>4 · Error Handling &amp; API Validation</h2>
+
+  <table>
+    <thead><tr><th>Ref</th><th>File</th><th>Issue</th><th>Severity</th><th>Recommended Change</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>E-01</td>
+        <td><span class="file">models.py L10</span></td>
+        <td><code>CodeRequest.code</code> is capped at <code>max_length=50000</code> characters. A submission of exactly 50,000 characters of deeply nested loops could cause near-quadratic regex backtracking in several patterns (especially <code>SQL_PATTERN</code> and <code>SECRET_PATTERN</code>).</td>
+        <td><span class="sev sev-high">high</span></td>
+        <td>Add a line-count guard before entering the rule loop: reject (HTTP 422) or truncate input that exceeds a configurable line limit (e.g. 3,000 lines). Apply a per-pattern timeout using <code>re</code>'s timeout parameter available in Python 3.11+ (<code>re.search(pattern, line, timeout=0.05)</code>).</td>
+        <td>A single crafted submission could DoS the server by exhausting CPU on regex evaluation.</td>
+      </tr>
+      <tr>
+        <td>E-02</td>
+        <td><span class="file">main.py L89-107</span></td>
+        <td>Neither <code>analyze_code</code> nor <code>modernize_code</code> catches exceptions from <code>analyze()</code> or <code>modernize()</code>. Any unhandled exception (e.g. a regex error, unexpected <code>None</code>, memory error) will surface as an unformatted HTTP 500 with a Python traceback in the response body.</td>
+        <td><span class="sev sev-high">high</span></td>
+        <td>Add a FastAPI exception handler for <code>Exception</code> at the app level that returns a structured <code>{"detail": "Internal analysis error"}</code> with status 500. Avoid leaking stack traces to clients.</td>
+        <td>Tracebacks expose internal module paths, library versions, and variable names to potential attackers.</td>
+      </tr>
+      <tr>
+        <td>E-03</td>
+        <td><span class="file">models.py L24-28</span></td>
+        <td><code>ScoreBreakdown</code> fields are plain <code>int</code>. Nothing prevents scores from being constructed outside 0–100 range if the arithmetic in <code>calculate_scores()</code> ever changes. <code>overall</code> is derived from a weighted average of three <code>max(0, …)</code> values, so it can theoretically exceed 100 if weights are adjusted.</td>
+        <td><span class="sev sev-medium">medium</span></td>
+        <td>Add <code>Field(ge=0, le=100)</code> to each field in <code>ScoreBreakdown</code>. This acts as a self-documenting contract and will catch future arithmetic bugs at the serialization boundary.</td>
+        <td>Pydantic field constraints are zero-cost documentation and provide free invariant checking.</td>
+      </tr>
+      <tr>
+        <td>E-04</td>
+        <td><span class="file">main.py L29-38</span></td>
+        <td>CORS allows <code>allow_credentials=True</code> combined with <code>allow_methods=["*"]</code> and <code>allow_headers=["*"]</code>. While origins are whitelisted, this is a broader permission than necessary for a stateless JSON API.</td>
+        <td><span class="sev sev-medium">medium</span></td>
+        <td>Set <code>allow_credentials=False</code> (the API uses no cookies or session tokens), restrict <code>allow_methods=["GET", "POST"]</code>, and restrict <code>allow_headers=["Content-Type"]</code>.</td>
+        <td>Principle of least privilege. Credentials+wildcard headers is the pattern that CORS misuse advisories warn against, even with explicit origin lists.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  
+  <h2>5 · Missing Test Cases</h2>
+
+  <table>
+    <thead><tr><th>Ref</th><th>Gap</th><th>Severity</th><th>Recommended Test</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>TS-01</td>
+        <td>No test exercises the <em>instantiation</em> side of the Java Vector → ArrayList rewrite (only the declaration is checked in <code>test_java_safe_modernization</code>).</td>
+        <td><span class="sev sev-high">high</span></td>
+        <td>Add a test with <code>new Vector&lt;&gt;()</code> and assert the output contains <code>new ArrayList&lt;&gt;()</code>. This will currently <strong>fail</strong>, exposing finding T-02.</td>
+        <td>Directly exposes the transformation gap before it reaches users.</td>
+      </tr>
+      <tr>
+        <td>TS-02</td>
+        <td>No test for <code>apply_safe_fixes=False</code> — the code path that returns the original code unchanged is untested.</td>
+        <td><span class="sev sev-medium">medium</span></td>
+        <td>POST to <code>/api/modernize</code> with <code>apply_safe_fixes: false</code> and assert <code>original_code == modernized_code</code> and the change message is the disabled-message string.</td>
+        <td>Business-logic path covering 50% of the modernize branch is completely dark.</td>
+      </tr>
+      <tr>
+        <td>TS-03</td>
+        <td>No test for language aliases (<code>py</code>, <code>js</code>, <code>node</code>, <code>python3</code>).</td>
+        <td><span class="sev sev-medium">medium</span></td>
+        <td>POST analyze with <code>language: "py"</code> and assert a 200 response with <code>language: "python"</code> in the body. Same for <code>"js"</code>, <code>"node"</code>.</td>
+        <td>The alias table in <code>analyzer.py</code> is public API surface; a regression would silently reject valid inputs.</td>
+      </tr>
+      <tr>
+        <td>TS-04</td>
+        <td>No test for the <code>score_improvement</code> sign when modernization makes no change (e.g. Python input).</td>
+        <td><span class="sev sev-medium">medium</span></td>
+        <td>POST Python code with security issues to <code>/api/modernize</code>; assert <code>score_improvement == 0</code> and <code>findings_resolved == 0</code>.</td>
+        <td>The <code>max(0, …)</code> guard in <code>findings_resolved</code> suggests an earlier version could return negative — verify the current formula holds at the boundary.</td>
+      </tr>
+      <tr>
+        <td>TS-05</td>
+        <td>No test for the cross-language detectors (hardcoded secrets, HTTP endpoints, SQL injection, TODO markers, long lines).</td>
+        <td><span class="sev sev-medium">medium</span></td>
+        <td>Add a dedicated <code>test_cross_language_findings</code> test covering each detector separately.</td>
+        <td>These patterns are completely untested and represent the highest-value security detectors in the engine.</td>
+      </tr>
+      <tr>
+        <td>TS-06</td>
+        <td>No test for whitespace-only code (e.g. <code>"   \n  "</code>).</td>
+        <td><span class="sev sev-low">low</span></td>
+        <td>POST <code>code: "   \n  "</code> to <code>/api/analyze</code>; the Pydantic <code>min_length=1</code> validator passes on whitespace, so the route is reached. Assert a sensible response (score 100, 0 findings).</td>
+        <td>Whitespace-only strings pass <code>min_length=1</code> validation but are meaningless input; behaviour should be documented by a test.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  
+  <h2>6 · Maintainability</h2>
+
+  <table>
+    <thead><tr><th>Ref</th><th>File</th><th>Issue</th><th>Severity</th><th>Recommended Change</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>M-01</td>
+        <td><span class="file">analyzer.py L250-275</span></td>
+        <td>Rule tuples are untyped 6-element plain tuples. Adding or reordering a field requires updating every entry and every destructuring site simultaneously.</td>
+        <td><span class="sev sev-medium">medium</span></td>
+        <td>Define a <code>Rule</code> named-tuple or dataclass with named fields (<code>pattern</code>, <code>category</code>, <code>severity</code>, <code>title</code>, <code>description</code>, <code>recommendation</code>) and update <code>RULES</code> accordingly.</td>
+        <td>Named fields make intent explicit, enable IDE navigation, and prevent positional mistakes when adding the 7th field (e.g., auto-fixable flag).</td>
+      </tr>
+      <tr>
+        <td>M-02</td>
+        <td><span class="file">analyzer.py L354-374</span></td>
+        <td><code>detect_duplicate_findings()</code> mutates IDs on Finding objects in place (<code>finding.id = …</code>) while also being called after <code>add_finding()</code> already sets IDs. Then <code>analyze()</code> re-numbers IDs a second time. IDs are set three times per finding.</td>
+        <td><span class="sev sev-medium">medium</span></td>
+        <td>Assign the final ID only once — after deduplication and sorting — in <code>analyze()</code>. Remove the ID assignment from <code>add_finding()</code> (use a sentinel like <code>"PENDING"</code>) and remove it from <code>detect_duplicate_findings()</code>.</td>
+        <td>Triple ID assignment is confusing and will produce incorrect IDs if the calling order ever changes.</td>
+      </tr>
+      <tr>
+        <td>M-03</td>
+        <td><span class="file">requirements.txt</span></td>
+        <td>The file is encoded in UTF-16 LE (wide characters with interspersed <code>\x00</code> bytes), which breaks standard pip workflows (<code>pip install -r requirements.txt</code> will fail or produce corrupt output).</td>
+        <td><span class="sev sev-high">high</span></td>
+        <td>Re-save <code>requirements.txt</code> as UTF-8 without BOM. Run <code>pip install -r requirements.txt</code> to verify. Consider generating it with <code>pip freeze &gt; requirements.txt</code> and separating dev deps (pytest, httpx) into <code>requirements-dev.txt</code>.</td>
+        <td>Any CI system or fresh developer setup will fail immediately on dependency installation.</td>
+      </tr>
+      <tr>
+        <td>M-04</td>
+        <td><span class="file">App.tsx L62</span></td>
+        <td>The backend URL <code>http://127.0.0.1:8000</code> is a hard-coded constant in the frontend source. It cannot be overridden without a code change.</td>
+        <td><span class="sev sev-medium">medium</span></td>
+        <td>Read the base URL from <code>import.meta.env.VITE_API_URL</code> with a fallback: <code>const API = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000"</code>. Document the env var in a <code>.env.example</code> file.</td>
+        <td>Required for any staging or production deployment without rebuilding the frontend with patched source.</td>
+      </tr>
+      <tr>
+        <td>M-05</td>
+        <td><span class="file">App.tsx L549, L650</span></td>
+        <td>React list keys use <code>`${step}-${index}`</code> and <code>`${change}-${index}`</code> — content-derived keys with an index fallback. If two plan steps have the same text (e.g., both say "Review dependencies"), React will not correctly distinguish them during reconciliation.</td>
+        <td><span class="sev sev-low">low</span></td>
+        <td>Use only the index as the key (<code>key={index}</code>) since the list is static and not reordered, or deduplicate plan items on the backend before returning them.</td>
+        <td>Content + index composite keys are more fragile than pure index keys for non-reorderable lists; they give the false impression of stability while still breaking on duplicate content.</td>
+      </tr>
+      <tr>
+        <td>M-06</td>
+        <td><span class="file">analyzer.py L377-420</span></td>
+        <td>The <code>calculate_scores()</code> function iterates the findings list three separate times (once per category group). For the realistic input size this is fine, but the structure obscures that "quality" and "observability" findings contribute to both maintainability and modernization penalties simultaneously, making the scoring formula invisible.</td>
+        <td><span class="sev sev-low">low</span></td>
+        <td>Add a module-level constant <code>SCORE_CATEGORY_MAP</code> that explicitly documents which finding categories contribute to which score dimension. Use it inside <code>calculate_scores()</code> to drive the single-pass computation.</td>
+        <td>The overlap between maintainability and modernization score inputs is the single most confusing design decision in the scoring engine. Making it explicit reduces the risk of future miscalculations.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note" style="margin-top:28px">
+    <strong>Priority order for a first fix sprint:</strong>
+    M-03 (requirements.txt encoding — blocks CI) → T-02 (Java instantiation gap — produces invalid output) → T-01 (var→let hoisting risk — transformation behavior change) → B-01 (SUPPORTED_LANGUAGES sync) → E-01 (ReDoS surface) → E-02 (unhandled exceptions leaking tracebacks).
+  </div>
+
+  <footer>Made with IBM Bob</footer>
+</div>
+</body>
+</html>
