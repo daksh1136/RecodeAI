@@ -121,7 +121,7 @@ function scoreLabel(score: number) {
 
 function App() {
   const [language, setLanguage] = useState("python");
-  const [code, setCode] = useState(samples.python);
+  const [code, setCode] = useState("");
 
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [modernization, setModernization] =
@@ -152,7 +152,13 @@ function App() {
 
   function changeLanguage(nextLanguage: string) {
     setLanguage(nextLanguage);
-    setCode(samples[nextLanguage]);
+    setAnalysis(null);
+    setModernization(null);
+    setError("");
+  }
+
+  function loadSample() {
+    setCode(samples[language]);
     setAnalysis(null);
     setModernization(null);
     setError("");
@@ -160,7 +166,7 @@ function App() {
 
   async function analyzeCode() {
     if (!code.trim()) {
-      setError("Add some source code before running analysis.");
+      setError("Paste source code or load a sample before running the analysis.");
       return;
     }
 
@@ -272,26 +278,28 @@ function App() {
 
       <main className="container" id="main-content">
         <section className="hero">
-          <div className="eyebrow">
-            <Sparkles size={13} />
-            RECODEAI // LEGACY CODE INTELLIGENCE
-          </div>
+          <div className="hero-copy">
+            <div className="eyebrow">
+              <Sparkles size={13} />
+              RECODEAI // LEGACY CODE INTELLIGENCE
+            </div>
 
-          <h1>
-            Understand legacy code
-            <br />
-            <span>before you rewrite it.</span>
-          </h1>
+            <h1>
+              Understand legacy code
+              <br />
+              <span>before you rewrite it.</span>
+            </h1>
 
-          <p>
-            RecodeAI detects modernization risks, explains why they matter,
-            creates a prioritized remediation plan and measures whether
-            conservative transformations actually improve the code.
-          </p>
-          <div className="hero-pills">
-            <span><ShieldCheck size={13} /> Explainable findings</span>
-            <span><Zap size={13} /> Measurable impact</span>
-            <span><Code2 size={13} /> Python · JS · Java</span>
+            <p>
+              RecodeAI detects modernization risks, explains why they matter,
+              creates a prioritized remediation plan and measures whether
+              conservative transformations actually improve the code.
+            </p>
+            <div className="hero-pills">
+              <span><ShieldCheck size={13} /> Explainable findings</span>
+              <span><Zap size={13} /> Measurable impact</span>
+              <span><Code2 size={13} /> Python · JS · Java</span>
+            </div>
           </div>
           <div className="hero-visual" aria-hidden="true">
             <span className="hero-visual-label">TRACE / REVIEW / REPAIR</span>
@@ -331,6 +339,7 @@ function App() {
               className="code-editor"
               aria-label="Source code to analyze"
               value={code}
+              placeholder="Paste your legacy source code here..."
               spellCheck={false}
               onChange={(event) => {
                 setCode(event.target.value);
@@ -344,23 +353,34 @@ function App() {
                 {code.split("\n").length} lines · {code.length} characters
               </span>
 
-              <button
-                className="primary-button"
-                onClick={analyzeCode}
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <RefreshCw className="spin" size={15} />
-                    Analyzing
-                  </>
-                ) : (
-                  <>
-                    <Activity size={15} />
-                    Analyze code
-                  </>
-                )}
-              </button>
+              <div className="editor-actions">
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={loadSample}
+                  disabled={loading}
+                >
+                  Load sample
+                </button>
+
+                <button
+                  className="primary-button"
+                  onClick={analyzeCode}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <RefreshCw className="spin" size={15} />
+                      Analyzing
+                    </>
+                  ) : (
+                    <>
+                      <Activity size={15} />
+                      Analyze code
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
